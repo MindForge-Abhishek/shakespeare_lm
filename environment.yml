@@ -1,0 +1,13 @@
+name: shakespeare_lm
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - jupyter
+  - requests
+  - tqdm
+  - numpy
+  - matplotlib
+
+  - pip:
+    - torch
