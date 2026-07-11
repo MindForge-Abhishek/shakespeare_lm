@@ -4,10 +4,12 @@
 2. Encode the text using tokenizer from src/data/tokenizer.py 
 3. create the tensor of the encoded text and split the tensors into train and validation set
 4. Then save the training set of tensors into data/processed/train.pt and validation set into data/processed/val.pt 
-5. Load the tensor dataset for training '''
+
+'''
 
 import torch
 from pathlib import Path
+import json
 from src.data.tokenizer import build_vocab, encode
 
 raw_path = Path(__file__).resolve().parent.parent.parent / "data" / "raw" / "input.txt"
@@ -30,13 +32,11 @@ def prepare_dataset():
     processed_dir.mkdir(parents = True , exist_ok = True)
     torch.save(train_data, processed_dir / "train.pt")
     torch.save(val_data, processed_dir / "val.pt" )
+    with open(processed_dir / "vocab.json", "w", encoding="utf-8") as f: 
+        json.dump(stoi, f)
     print(f"Saved to {processed_dir}")
 
 
-def load_dataset ():
-    train_data = torch.load(processed_dir / "train.pt")
-    val_data = torch.load(processed_dir / "val.pt")
-    return( train_data, val_data)
 
 
 if __name__ == "__main__" :
