@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 class BigramLanguageModel(nn.Module):
 
@@ -8,6 +9,15 @@ class BigramLanguageModel(nn.Module):
         self.embedding_table = nn.Embedding(vocab_size, vocab_size)
 
     
-    def forward(self,x):
+    def forward(self,x, targets = None):
         logits = self.embedding_table(x)
-        return logits
+        if targets is None:
+            loss = None
+        else:
+            B,T,C = logits.shape
+            logits = logits.view(B*T ,C)
+            targets = targets.view(B*T)
+            loss = F.cross_entropy(logits, targets)
+
+        return logits , loss
+    
