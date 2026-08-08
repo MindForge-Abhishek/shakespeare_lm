@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-class Head(nn.Module):
+class AttentionHead(nn.Module):
 
     def __init__(self, head_size, d_model, block_size):
         super().__init__()
@@ -30,7 +30,7 @@ class MultiHeadAttention(nn.Module):
     def __init__(self, num_heads, head_size, d_model, block_size):
         super().__init__()
         self.heads = nn.ModuleList([
-            Head(head_size, d_model, block_size) for _ in range(num_heads)
+            AttentionHead(head_size, d_model, block_size) for _ in range(num_heads)
         ])
         self.proj = nn.Linear(d_model, d_model)
 
@@ -103,3 +103,28 @@ class TransformerLanguageModel(nn.Module):
             loss = F.cross_entropy(logits, targets)
 
         return logits, loss
+
+
+
+
+if __name__ == "__main__":
+    torch.manual_seed(42)
+    vocab_size = 65
+    d_model = 64
+    num_heads = 4
+    num_layers = 4
+    block_size = 8
+    B = 4
+
+    x = torch.randint(0, vocab_size, (B, block_size))
+    targets = torch.randint(0, vocab_size, (B, block_size))
+
+    model = TransformerLanguageModel(vocab_size, d_model, num_heads, num_layers, block_size)
+    logits, loss = model(x)
+
+    print(f"Input shape:   {x.shape}")
+    print(f"Logits shape:  {logits.shape}")
+    # print(f"Loss:          {loss.item():.4f}")
+    print(f"Expected loss: ~{__import__('math').log(vocab_size):.4f}")
+    total_params = sum(p.numel() for p in model.parameters())
+    print(f"Total params:  {total_params:,}")
