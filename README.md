@@ -1,163 +1,147 @@
 # Shakespeare Language Model
 
-A character-level language model trained on Shakespeare's works.
-Built completely from scratch using PyTorch.
+A character-level transformer language model trained on the complete works of Shakespeare, built from scratch using PyTorch.
 
-## Purpose
+This project implements the full GPT-style transformer architecture from first principles — every component built and understood from the ground up, with no black boxes.
 
-This project is built for deep learning education.
-The goal is to understand every component of a modern
-language model — from raw text to trained model.
+## Results
 
-## Hardware
+| Model | Parameters | Val Loss | Sample Output |
+|-------|-----------|----------|---------------|
+| Bigram | 4,225 | ~2.4 | `HERDms t of IXf hasen d` |
+| Transformer | 209,729 | ~1.75 | `WARWICK: Now how their come, our chown` |
 
-- MacBook Air M2, 8GB unified memory
-- Training uses Apple MPS (Metal Performance Shaders) GPU backend
+The transformer model learned Shakespeare character names, dialogue formatting, punctuation placement, and basic English grammar structure purely from character-level statistics.
 
+## Architecture
+
+A GPT-style autoregressive transformer with the following components:
+
+- **Token embeddings** — learned character representations
+- **Positional embeddings** — learned position representations
+- **Multi-head self-attention** — causal (masked) attention with multiple heads in parallel
+- **Feed-forward layers** — position-wise MLP with 4x expansion
+- **Residual connections** — skip connections around attention and feed-forward
+- **Layer normalisation** — pre-norm configuration
+- **Dropout** — regularisation throughout
+
+### Hyperparameters
+
+vocab_size = 65 (unique characters in dataset)
+block_size = 32 (context length)
+d_model = 64 (embedding dimension)
+num_heads = 4 (attention heads per block)
+num_layers = 4 (transformer blocks)
+dropout = 0.2
+batch_size = 32
+learning_rate = 1e-3
+training_steps = 5000
 
 ## Project Structure
 
 shakespeare_lm/
 │
-├── data/
-│   ├── raw/                    # Raw downloaded text (gitignored)
-│   └── processed/              # Encoded tensors and vocab (gitignored)
-│
-├── notebooks/
-│   └── 01_data_exploration.ipynb
-│
 ├── src/
-│   ├── data/
-│   │   ├── download.py         # Downloads Tiny Shakespeare dataset
-│   │   ├── tokenizer.py        # Character-level tokenizer (build_vocab, encode, decode)
-│   │   └── tensor_creation.py  # Encodes text, splits 90/10, saves processed tensors
-│   │
-│   ├── models/
-│   │   └── bigram.py           # BigramLanguageModel (4,225 parameters)
-│   │
-│   └── training/
-│       ├── data_loader.py      # load_dataset(), load_vocab(), get_batch()
-│       └── train.py            # Training loop + text generation
+│ ├── data/
+│ │ ├── download.py # Downloads Tiny Shakespeare dataset
+│ │ ├── tokenizer.py # Character-level tokenizer (build_vocab, encode, decode)
+│ │ └── tensor_creation.py # Encodes dataset, splits 90/10, saves to disk
+│ │
+│ ├── models/
+│ │ ├── bigram.py # Baseline bigram language model
+│ │ └── transformer.py # Full transformer (AttentionHead, MultiHeadAttention,
+│ │ # FeedForward, Block, TransformerLanguageModel)
+│ │
+│ └── training/
+│ ├── data_loader.py # load_dataset, load_vocab, get_batch
+│ ├── train.py # Bigram training loop
+│ └── transformer_training.py # Transformer training loop with validation,
+│ # gradient clipping, and checkpointing
 │
+├── data/
+│ ├── raw/ # Raw downloaded text (gitignored)
+│ └── processed/ # Encoded tensors and vocab (gitignored)
+│
+├── checkpoints/ # Saved model weights (gitignored)
+├── notebooks/
+│ └── 01_data_exploration.ipynb
+| └── 01_attention.ipynb
 ├── environment.yml
 └── README.md
 
-## Status
-
-**Phase completed: Bigram Language Model**
-
-A character-level bigram model has been fully implemented and trained.
-It predicts the next character using only the current character.
-
-- Training loss after 10,000 steps: ~2.4
-- Theoretical baseline (random guessing): 4.17
-- Architecture ceiling: ~2.0–2.2 (bigram is fundamentally limited by one character of context)
-- Training device: Apple MPS (M2 GPU)
-
-Sample generated text after training:
-
-an:
-MNELI's tibowaid
-HERDms t of IXf hasen d ffr h Iotosit
-The model has learned character-pair statistics: correct spacing, apostrophe
-placement, colons after names, and common English bigrams like 'th'. It has
-not learned words, grammar, or meaning — that requires a transformer.
-
-**Next phase: Self-Attention and Transformer Architecture**
-
----
-
----
-
-## Dataset
-
-**Tiny Shakespeare** — the complete works of Shakespeare as a single plain text file.
-
-- Source: https://github.com/karpathy/char-rnn
-- Size: 1,115,394 characters
-- Vocabulary: 65 unique characters (letters, punctuation, newline, space)
-- Split: 90% training (1,003,854 characters), 10% validation (111,540 characters)
-
----
 
 ## Setup
 
-**Requirements:**
-- macOS with Apple Silicon (M2 or later) — MPS GPU backend used
-- Miniforge (Conda) for environment management
-- Python 3.12
+### Prerequisites
 
-**Create environment:**
+- macOS with Apple Silicon (MPS backend) or any machine with CUDA/CPU
+- Miniforge (conda)
+
+### Installation
+
 ```bash
+# Clone the repository
+git clone https://github.com/YOUR_USERNAME/shakespeare_lm.git
+cd shakespeare_lm
+
+# Create and activate conda environment
 conda env create -f environment.yml
 conda activate shakespeare_lm
+
+# Install PyTorch
 pip install torch
 ```
 
-**Prepare dataset:**
+### Prepare Data
+
 ```bash
+# Download the dataset
 python -m src.data.download
+
+# Create processed tensors
 python -m src.data.tensor_creation
 ```
 
-**Run training:**
+### Train
+
 ```bash
+# Train the bigram baseline
 python -m src.training.train
+
+# Train the transformer
+python -m src.training.transformer_training
 ```
 
----
+Trained model is saved to `checkpoints/transformer.pt`.
 
-## Architecture — Bigram Model
+## What Was Built And Learned
 
-The simplest possible language model. One embedding table of shape [65, 65].
+This project was built as a structured learning exercise to understand every component of modern language models from first principles.
 
-Each row corresponds to one input character. Each column in that row is the
-raw score (logit) for what the next character should be. The model learns by
-adjusting these scores until the correct next character has the highest score.
+### Concepts covered
 
-**Parameters:** 4,225 (65 × 65 embedding table)
+- Character-level tokenization and vocabulary construction
+- Tensor creation, train/validation splitting
+- Batch sampling for sequential text data
+- The bigram language model as a baseline
+- Cross-entropy loss and what it measures
+- The training loop — forward, loss, backward, step
+- Self-attention — queries, keys, values, scaled dot-product attention
+- Causal masking — why future tokens must be hidden during training
+- Multi-head attention — parallel attention heads, concatenation, output projection
+- Feed-forward layers — expansion, ReLU non-linearity, compression
+- Residual connections — gradient flow, vanishing gradient problem
+- Layer normalisation — training stability, pre-norm vs post-norm
+- Positional embeddings — why attention is position-blind without them
+- Dropout — regularisation, train vs eval mode
+- Gradient clipping — preventing exploding gradients
+- Checkpointing — saving and resuming training
+- Autoregressive text generation — sampling, context cropping
 
-**Loss function:** Cross-entropy
+## Dataset
 
-**Optimizer:** AdamW (learning rate 1e-3)
+[Tiny Shakespeare](https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt) — 1,115,394 characters, 65 unique characters, complete works of Shakespeare.
 
-**Hyperparameters:**
+## Acknowledgements
 
-| Parameter | Value | Meaning |
-|---|---|---|
-| block_size | 8 | Characters of context per training example |
-| batch_size | 32 | Sequences processed in parallel per step |
-| learning_rate | 1e-3 | AdamW base learning rate |
-| max_steps | 10,000 | Total training iterations |
-
----
-
-## Roadmap
-
-- [x] Environment setup (Miniforge, PyTorch, MPS verified)
-- [x] Data pipeline (download, tokenize, encode, split, persist)
-- [x] Character-level tokenizer
-- [x] Bigram language model
-- [x] Training loop with AdamW
-- [x] Text generation (autoregressive sampling)
-- [ ] Self-attention mechanism
-- [ ] Single attention head
-- [ ] Multi-head attention
-- [ ] Feed-forward layer
-- [ ] Residual connections
-- [ ] Layer normalisation
-- [ ] Full GPT-style transformer
-- [ ] Validation loss tracking
-- [ ] Checkpointing
-
----
-
-## Key Engineering Decisions
-
-- Character IDs are 0-indexed positions in `sorted(set(text))`, not ASCII values
-- Train/validation split is a fixed index cut, not a random shuffle — required for sequential text data
-- Processed tensors are saved to disk (`data/processed/`) so the encode step runs only once
-- Only `stoi` is persisted as JSON; `itos` is always reconstructed from it
-- `load_dataset()` and `load_vocab()` are separate functions — training and inference need different things
-- Device selection uses a runtime check (`mps` → `cpu` fallback), never hardcoded
-- `@torch.no_grad()` and `model.eval()` are used consistently during generation
+Architecture based on the transformer introduced in [Attention Is All You Need](https://arxiv.org/abs/1706.03762) (Vaswani et al., 2017).
