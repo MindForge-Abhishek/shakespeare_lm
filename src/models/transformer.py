@@ -12,7 +12,7 @@ class AttentionHead(nn.Module):
         self.value = nn.Linear(d_model, head_size, bias=False)
         self.register_buffer('tril', torch.tril(torch.ones(block_size, block_size)))
         self.head_size = head_size
-        self.dropout = nn.Dropout(dropout)
+        self.dropout = nn.Dropout(dropout) # dropout added
 
     def forward(self, x):
         B, T, C = x.shape
